@@ -119,7 +119,7 @@ namespace MedShareAppAPI.Controllers
         public async Task<IActionResult> CheckoutMyCart()
         {
             await _requestService.CheckoutAsync();
-            return Ok("Medicine added to cart");
+            return Ok("Checkout completed successfully");
         }
 
         [Authorize(Roles = "User")]
@@ -128,8 +128,10 @@ namespace MedShareAppAPI.Controllers
             [FromBody] AddToCartDto dto)
         {
             await _requestService.RemoveItemFromCartAsync(dto);
-            return Ok("Equipment removed from cart");
+            return Ok("Item removed from cart");
         }
+
+        [Authorize(Roles = "User")]
         [HttpGet("myCart")]
         public async Task<ActionResult<CartItemResponseDto>> GetMyCart()
         {

@@ -1,16 +1,28 @@
-# test_app
+# MedShare (Flutter)
 
-A new Flutter project.
+## Configure API base URL
 
-## Getting Started
+The app uses `ApiClient` with a configurable base URL.
 
-This project is a starting point for a Flutter application.
+- Default: `http://localhost:5149/api`
+- Override at build/run time:
 
-A few resources to get you started if this is your first Flutter project:
+```bash
+# Android Emulator
+flutter run --dart-define=API_BASE_URL=http://10.0.2.2:5149/api
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+# iOS Simulator / macOS / Windows / Linux desktop
+flutter run --dart-define=API_BASE_URL=http://localhost:5149/api
+```
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Notes
+
+- **Auth header**: automatically added by `ApiClient` from secure storage.
+- **Images/files**: server-hosted paths like `/Uploads/...` are converted to absolute URLs using `ApiClient.publicUrl(...)`.
+
+## Run
+
+```bash
+flutter pub get
+flutter run
+```

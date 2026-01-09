@@ -20,14 +20,32 @@ builder.Services.AddControllers();
 #endregion
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll",
-        policy =>
+    options.AddPolicy("DefaultCors", policy =>
+    {
+        if (builder.Environment.IsDevelopment())
         {
             policy
                 .AllowAnyOrigin()
                 .AllowAnyMethod()
                 .AllowAnyHeader();
-        });
+            return;
+        }
+
+        var allowedOrigins = builder.Configuration
+            .GetSection("Cors:AllowedOrigins")
+            .Get<string[]>() ?? Array.Empty<string>();
+
+        if (allowedOrigins.Length == 0)
+        {
+            // No CORS in production unless explicitly configured.
+            return;
+        }
+
+        policy
+            .WithOrigins(allowedOrigins)
+            .AllowAnyMethod()
+            .AllowAnyHeader();
+    });
 });
 #region DbContext
 builder.Services.AddDbContext<MedShareDbContext>(options =>
@@ -44,6 +62,11 @@ builder.Services.AddHttpContextAccessor();
 #region JWT Authentication
 var jwtSection = builder.Configuration.GetSection("Jwt");
 var jwtKey = jwtSection["Key"]!;
+if (string.IsNullOrWhiteSpace(jwtKey))
+    throw new InvalidOperationException("JWT Key is not configured. Set Jwt:Key in appsettings or via environment variable Jwt__Key.");
+
+if (!builder.Environment.IsDevelopment() && jwtKey == "CHANGE_ME_DEV_ONLY")
+    throw new InvalidOperationException("JWT Key is using the development placeholder. Set a strong key via configuration (Jwt__Key).");
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -120,15 +143,27 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<MedShareDbContext>();
-    await SystemAdminSeedData.InitializeAsync(context);
+    await SystemAdminSeedData.InitializeAsync(context, builder.Configuration, app.Environment);
 }
 #endregion
 
 #region Middleware Pipeline
-app.UseSwagger();
-app.UseSwaggerUI();
+// Global exception -> problem details mapping (keeps controllers/services clean)
+app.UseMiddleware<MedShareAppAPI.Middleware.ApiExceptionMiddleware>();
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 
 app.UseHttpsRedirection();
+app.UseRouting();
+app.UseCors("DefaultCors");
+
+app.UseAuthentication();
+app.UseAuthorization();
+
 app.UseStaticFiles();
 app.UseStaticFiles(new StaticFileOptions
 {
@@ -137,10 +172,6 @@ app.UseStaticFiles(new StaticFileOptions
     ),
     RequestPath = "/Uploads"
 });
-app.UseCors("AllowAll");
-app.UseAuthentication();
-app.UseAuthorization();
-app.UseStaticFiles();
 app.MapControllers();
 #endregion
 

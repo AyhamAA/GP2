@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:test_app/widgets/custom_text_field.dart';
+import '../../core/api/api_client.dart';
 import '../../features/auth/data/drprofile/dr_profile_service.dart';
 
 class DrProfileScreen extends StatefulWidget {
@@ -382,7 +383,7 @@ class _DrProfileScreenState extends State<DrProfileScreen> {
       _drProfileEmailCtrl.text = profile.email;
 
       _drprofileImageUrl = profile.profileImageUrl != null
-          ? 'http://10.0.2.2:5149/${profile.profileImageUrl}'
+          ? ApiClient.publicUrl(profile.profileImageUrl)
           : null;
     });
   }

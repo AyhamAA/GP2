@@ -116,7 +116,7 @@ namespace Application.Services.Implementations
         public async Task ApproveEquipmentRequestAsync(RequestDto dto)
         {
             var request = await _requestEquipmentRepo.GetById(dto.RequestId);
-            if (request == null) throw new Exception("Request not found");
+            if (request == null) throw new KeyNotFoundException("Request not found");
 
             var donation = new DonationEquipment
             {
@@ -145,7 +145,7 @@ namespace Application.Services.Implementations
         public async Task ApproveMedicineRequestAsync(RequestDto dto)
         {
             var request = await _requestMedicineRepo.GetById(dto.RequestId);
-            if (request == null) throw new Exception("Request not found");
+            if (request == null) throw new KeyNotFoundException("Request not found");
            
             var donation = new DonationMedicine
             {
@@ -176,7 +176,7 @@ namespace Application.Services.Implementations
         public async Task RejectEquipmentRequestAsync(RequestDto dto)
         {
             var request = await _requestEquipmentRepo.GetById(dto.RequestId);
-            if (request == null) throw new Exception("Request not found");
+            if (request == null) throw new KeyNotFoundException("Request not found");
 
             request.Status = StatusDonation.Rejected;
             await _requestEquipmentRepo.SaveChanges();
@@ -185,7 +185,7 @@ namespace Application.Services.Implementations
         public async Task RejectMedicineRequestAsync(RequestDto dto)
         {
             var request = await _requestMedicineRepo.GetById(dto.RequestId);
-            if (request == null) throw new Exception("Request not found");
+            if (request == null) throw new KeyNotFoundException("Request not found");
 
             request.Status = StatusDonation.Rejected;
             await _requestMedicineRepo.SaveChanges();
@@ -273,15 +273,15 @@ namespace Application.Services.Implementations
 
             var user = await _userRepo.GetById(userId);
 
-            if (user == null) throw new Exception("User not found");
+            if (user == null) throw new KeyNotFoundException("User not found");
 
-            if (donation == null) throw new Exception("Donation not found");
+            if (donation == null) throw new KeyNotFoundException("Donation not found");
 
-            if(donation.AddedToCart) throw new Exception("Donation already in cart");
+            if(donation.AddedToCart) throw new InvalidOperationException("Donation already in cart");
 
-            if(donation.UserId == user.UserId) throw new Exception("Cannot add your own donation to cart");
+            if(donation.UserId == user.UserId) throw new InvalidOperationException("Cannot add your own donation to cart");
            
-            if(dto.Quantity > donation.Quantity) throw new Exception("Requested quantity exceeds available quantity");
+            if(dto.Quantity > donation.Quantity) throw new ArgumentException("Requested quantity exceeds available quantity");
 
             var addtoCart= new CartItem { 
                     DonationEquipmentId = donation.DonationEquipmentId,
@@ -306,15 +306,15 @@ namespace Application.Services.Implementations
 
             var user = await _userRepo.GetById(userId);
 
-            if (user == null) throw new Exception("User not found");
+            if (user == null) throw new KeyNotFoundException("User not found");
 
-            if (donation == null) throw new Exception("Donation not found");
+            if (donation == null) throw new KeyNotFoundException("Donation not found");
 
-            if (donation.AddedToCart) throw new Exception("Donation already in cart");
+            if (donation.AddedToCart) throw new InvalidOperationException("Donation already in cart");
 
-            if (donation.UserId == user.UserId) throw new Exception("Cannot add your own donation to cart");
+            if (donation.UserId == user.UserId) throw new InvalidOperationException("Cannot add your own donation to cart");
 
-            if (dto.Quantity > donation.Quantity) throw new Exception("Requested quantity exceeds available quantity");
+            if (dto.Quantity > donation.Quantity) throw new ArgumentException("Requested quantity exceeds available quantity");
             var addtoCart = new CartItem
             {
                DonationMedicineId = donation.DonationMedicineId,
@@ -340,7 +340,7 @@ namespace Application.Services.Implementations
                     ((c.ItemType == CartType.Equipment && c.DonationEquipmentId == dto.DonationId) ||
                      (c.ItemType == CartType.Medicine && c.DonationMedicineId == dto.DonationId)));
             
-            if (addedToCartItem == null) throw new Exception("Item not found in cart");
+            if (addedToCartItem == null) throw new KeyNotFoundException("Item not found in cart");
 
             // Reset AddedToCart flag on donation
             if (addedToCartItem.ItemType == CartType.Equipment)
@@ -378,7 +378,7 @@ namespace Application.Services.Implementations
                 .Where(c => c.UserId == userId).ToListAsync();
 
             if (!cartItems.Any())
-                throw new Exception("Cart is empty");
+                throw new InvalidOperationException("Cart is empty");
 
             foreach (var item in cartItems)
             {

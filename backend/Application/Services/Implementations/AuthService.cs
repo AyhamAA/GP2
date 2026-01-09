@@ -80,6 +80,7 @@ namespace Application.Services
                 UserId = user.UserId,
                 Expires = DateTime.UtcNow.AddDays(7)
             });
+            await _refreshTokenRepo.SaveChanges();
 
             return new LoginResponseDto
             {
@@ -137,7 +138,7 @@ namespace Application.Services
             var user = await _userRepo.GetById(userId);
 
             if (user == null)
-                throw new Exception("User not found");
+                throw new KeyNotFoundException("User not found");
 
             PasswordHasher<User> passwordHasher = new PasswordHasher<User>();
             string? storedHash = user.Password;
@@ -178,7 +179,7 @@ namespace Application.Services
                 .FirstOrDefaultAsync(u => u.UserId == userId && u.Role == Role.User);
 
             if (user == null)
-                throw new Exception("User not found");
+                throw new KeyNotFoundException("User not found");
 
             return new UserProfileDto
             {
@@ -203,7 +204,7 @@ namespace Application.Services
                 .FirstOrDefaultAsync(u => u.UserId == userId && u.Role == Role.User);
 
             if (user == null)
-                throw new Exception("User not found");
+                throw new KeyNotFoundException("User not found");
 
             if (dto.UploadProfileImage != null)
             {
@@ -239,7 +240,7 @@ namespace Application.Services
                 .FirstOrDefaultAsync(u => u.UserId == userId && u.Role == Role.Admin);
 
             if (admin == null)
-                throw new Exception("Admin not found");
+                throw new KeyNotFoundException("Admin not found");
 
             return new UserProfileDto
             {
@@ -263,7 +264,7 @@ namespace Application.Services
                 .FirstOrDefaultAsync(u => u.UserId == userId && u.Role == Role.Admin);
 
             if (admin == null)
-                throw new Exception("Admin not found");
+                throw new KeyNotFoundException("Admin not found");
 
             if (dto.UploadProfileImage != null)
             {
@@ -348,15 +349,18 @@ namespace Application.Services
 
             var userId = Convert.ToInt32(userIdClaim);
 
-            var storedToken = _refreshTokenRepo.GetAll()
-                .FirstOrDefault(rt => rt.UserId == userId && rt.Token == refreshToken && rt.Expires > DateTime.UtcNow);
+            var storedToken = await _refreshTokenRepo.GetAll()
+                .FirstOrDefaultAsync(rt =>
+                    rt.UserId == userId &&
+                    rt.Token == refreshToken &&
+                    rt.Expires > DateTime.UtcNow);
             if (storedToken == null)
             {
                 throw new SecurityTokenException("Invalid refresh token.");
             }
             var user = await _userRepo.GetById(storedToken.UserId);
             if (user == null)
-                throw new Exception("User not found");
+                throw new KeyNotFoundException("User not found");
             
             return GenerateAccessToken(user);
         }

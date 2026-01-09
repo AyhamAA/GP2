@@ -39,22 +39,22 @@ namespace Application.Services.Implementations
             var donation = await _equipmentRepo.GetById(dto.DonationId);
 
             if (donation == null)
-                throw new Exception("Donation not found");
+                throw new KeyNotFoundException("Donation not found");
 
             var requestAssigns = await _requestAssignRepo.GetAll()
                 .Where(r => r.DonationId == dto.DonationId &&
                        r.UserId == dto.ReceiverUserId).ToListAsync();
 
             if (!requestAssigns.Any())
-                throw new Exception("No request found for this donation");
+                throw new KeyNotFoundException("No request found for this donation");
 
             var requestedQuantity = requestAssigns.Sum(r => r.Quantity);
 
             if (requestedQuantity > donation.Quantity)
-                throw new Exception("Requested quantity exceeds available quantity");
+                throw new ArgumentException("Requested quantity exceeds available quantity");
 
             if (donation.UserAssignedTo != null)
-                throw new Exception("Donation already assigned");
+                throw new InvalidOperationException("Donation already assigned");
 
             donation.Quantity -= requestedQuantity;
             donation.AssignStatus = AssignStatus.AssigningApproved;
@@ -69,21 +69,23 @@ namespace Application.Services.Implementations
         {
 
             var donation = await _medicineRepo.GetById(dto.DonationId);
+            if (donation == null)
+                throw new KeyNotFoundException("Donation not found");
 
             var requestAssigns = await _requestAssignRepo.GetAll()
               .Where(r => r.DonationId == dto.DonationId &&
                      r.UserId == dto.ReceiverUserId).ToListAsync();
 
             if (!requestAssigns.Any())
-                throw new Exception("No request found for this donation");
+                throw new KeyNotFoundException("No request found for this donation");
 
             var requestedQuantity = requestAssigns.Sum(r => r.Quantity);
 
             if (requestedQuantity > donation.Quantity)
-                throw new Exception("Requested quantity exceeds available quantity");
+                throw new ArgumentException("Requested quantity exceeds available quantity");
 
             if (donation.UserId != null)
-                throw new Exception("Donation already assigned");
+                throw new InvalidOperationException("Donation already assigned");
 
             donation.Quantity -= requestedQuantity;
             donation.AssignStatus = AssignStatus.AssigningApproved;
@@ -103,7 +105,7 @@ namespace Application.Services.Implementations
                     r.Status == AssignStatus.Pending);
 
             if (requestAssign == null)
-                throw new Exception("Pending request not found for this user");
+                throw new KeyNotFoundException("Pending request not found for this user");
 
             requestAssign.Status = AssignStatus.AssigningRejected;
 
@@ -130,11 +132,16 @@ namespace Application.Services.Implementations
                 ItemName = e.DonationEquipment.ItemName,
                 Quantity = e.DonationEquipment.Quantity,
                 ExpirationDate=null,
+                Type = "Equipment",
             }).ToListAsync();
         }
         public async Task<List<AdminTakeDonationRequestDto>> GetPendingTakeMedicineDonationRequestsAsync()
         {
-            return await _requestAssignRepo.GetAll().Include(u => u.User).Include(u => u.DonationEquipment).Where(u => u.Status == AssignStatus.Pending).Select(e => new AdminTakeDonationRequestDto
+            return await _requestAssignRepo.GetAll()
+                .Include(u => u.User)
+                .Include(u => u.DonationMedicine)
+                .Where(u => u.Status == AssignStatus.Pending)
+                .Select(e => new AdminTakeDonationRequestDto
             {
                 UserId = e.UserId,
                 UserName = e.User.FullName,
@@ -143,6 +150,7 @@ namespace Application.Services.Implementations
                 ItemName = e.DonationMedicine.ItemName,
                 ExpirationDate=e.DonationMedicine.ExpirationDate,
                 Quantity = e.DonationMedicine.Quantity,
+                Type = "Medicine",
             }).ToListAsync();
 
         }

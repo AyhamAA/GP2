@@ -39,6 +39,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("ResetPassword")]
+    [Authorize]
     public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto input)
     {
         await _authService.ResetPassword(input);

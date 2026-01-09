@@ -36,7 +36,7 @@ namespace Application.Services.Implementations
 
             if (task == null)  
                 
-                throw new Exception("Task not found");
+                throw new KeyNotFoundException("Task not found");
 
             task.Status = TasksStatus.Cancelled;
 
@@ -49,7 +49,7 @@ namespace Application.Services.Implementations
                 .FirstOrDefaultAsync(t => t.TaskId == dto.TaskId);
 
             if (task == null)
-                throw new Exception("Task not found");
+                throw new KeyNotFoundException("Task not found");
 
             task.DueDate = dto.DueDate;
             task.Notes = dto.Notes;

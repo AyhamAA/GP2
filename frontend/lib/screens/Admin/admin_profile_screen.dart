@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:test_app/widgets/custom_text_field.dart';
 
+import '../../core/api/api_client.dart';
 import '../../features/auth/data/Profile/profiel_service.dart';
 
 class AdminProfileScreen extends StatefulWidget {
@@ -375,7 +376,7 @@ class _AdminProfileScreenState extends State<AdminProfileScreen> {
       _adminProfileEmailCtrl.text = profile.email;
 
       _profileImageUrl = profile.profileImageUrl != null
-          ? 'http://10.0.2.2:5149/${profile.profileImageUrl}'
+          ? ApiClient.publicUrl(profile.profileImageUrl)
           : null;
     });
   }

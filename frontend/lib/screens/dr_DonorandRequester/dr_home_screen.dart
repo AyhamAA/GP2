@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:test_app/screens/dr_DonorandRequester/dr_notification_screen.dart';
+import '../../core/api/api_client.dart';
 import '../../core/storage/user_storage.dart';
 import '../../features/auth/data/donations/donation_service.dart';
 import '../../features/auth/data/donations/available_donation_model.dart';
@@ -294,7 +295,7 @@ class _DrHomeScreenState extends State<DrHomeScreen>
                   ClipRRect(
                     borderRadius: BorderRadius.circular(16),
                     child: Image.network(
-                      'http://10.0.2.2:5149/${donation.displayImage}',
+                      ApiClient.publicUrl(donation.displayImage),
                       width: double.infinity,
                       height: 200,
                       fit: BoxFit.cover,
@@ -745,7 +746,7 @@ class _DrHomeScreenState extends State<DrHomeScreen>
   Widget _buildEquipmentCard(
       AvailableDonation donation, double width, double height) {
     final imageUrl = donation.displayImage.isNotEmpty
-        ? 'http://10.0.2.2:5149/${donation.displayImage}'
+        ? ApiClient.publicUrl(donation.displayImage)
         : null;
 
     return FadeTransition(

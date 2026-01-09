@@ -64,12 +64,16 @@ namespace MedShareAppAPI.Controllers
         {
             return Ok(await _donationService.GetAllDonationsAsync());
         }
+
+        [Authorize(Roles = "Admin")]
         [HttpGet("admin/pending-equipmenttake")]
         public async Task<IActionResult> GetPendingTakeEquipmentDonationRequestsAsync()
         {
             var result = await _donationService.GetPendingTakeEquipmentDonationRequestsAsync();
             return Ok(result);
         }
+
+        [Authorize(Roles = "Admin")]
         [HttpGet("admin/pending-medicinetake")]
         public async Task<IActionResult> GetPendingTakeMedicineDonationRequestsAsync()
         {
