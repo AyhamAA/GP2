@@ -16,6 +16,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using Application.DTOs.Auth.Token;
 
 namespace Application.Services
 {
@@ -341,18 +342,18 @@ namespace Application.Services
             string refreshToken = Convert.ToBase64String(random);
             return refreshToken;
         }
-        public async Task<string> RefreshToken(string refreshToken)
+        public async Task<RefreshTokenResponseDto> RefreshTokenAsync(RefreshTokenRequestDto input)
         {
-            var userIdClaim = _httpContextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (userIdClaim == null)
-                throw new UnauthorizedAccessException("User not authenticated");
+            if (input.UserId <= 0)
+                throw new ArgumentException("Invalid user id");
 
-            var userId = Convert.ToInt32(userIdClaim);
+            if (string.IsNullOrWhiteSpace(input.RefreshToken))
+                throw new ArgumentException("Refresh token is required");
 
             var storedToken = await _refreshTokenRepo.GetAll()
                 .FirstOrDefaultAsync(rt =>
-                    rt.UserId == userId &&
-                    rt.Token == refreshToken &&
+                    rt.UserId == input.UserId &&
+                    rt.Token == input.RefreshToken &&
                     rt.Expires > DateTime.UtcNow);
             if (storedToken == null)
             {
@@ -361,8 +362,21 @@ namespace Application.Services
             var user = await _userRepo.GetById(storedToken.UserId);
             if (user == null)
                 throw new KeyNotFoundException("User not found");
-            
-            return GenerateAccessToken(user);
+
+            // Rotate refresh token on use
+            var newAccessToken = GenerateAccessToken(user);
+            var newRefreshToken = GenerateRefreshToken();
+
+            storedToken.Token = newRefreshToken;
+            storedToken.Expires = DateTime.UtcNow.AddDays(7);
+            _refreshTokenRepo.Update(storedToken);
+            await _refreshTokenRepo.SaveChanges();
+
+            return new RefreshTokenResponseDto
+            {
+                AccessToken = newAccessToken,
+                RefreshToken = newRefreshToken
+            };
         }
 
       

@@ -3,6 +3,7 @@ import 'package:test_app/screens/Admin/admin_profile_screen.dart';
 import 'package:test_app/screens/Admin/calendar_screen.dart';
 import 'package:test_app/screens/dr_DonorandRequester/dr_cart_screen.dart';
 import 'package:test_app/screens/dr_DonorandRequester/donor/donor_request_screen.dart';
+import 'package:test_app/core/api/api_client.dart';
 import 'package:test_app/screens/onboarding1.dart';
 import 'package:test_app/screens/onboarding2.dart';
 import 'package:test_app/screens/reset_password.dart';
@@ -13,6 +14,7 @@ import 'package:test_app/widgets/dr_navigation.dart';
 //import 'package:test_app/screens/home_screen.dart';
 
 void main() {
+  ApiClient.ensureInitialized();
   runApp(const MyApp());
 }
 

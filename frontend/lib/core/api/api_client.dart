@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'auth_refresh_service.dart';
 import '../storage/token_storage.dart';
 
 class ApiClient {
@@ -15,17 +16,66 @@ class ApiClient {
       sendTimeout: const Duration(seconds: 20),
       receiveTimeout: const Duration(seconds: 20),
     ),
-  )..interceptors.add(
-    InterceptorsWrapper(
-      onRequest: (options, handler) async {
-        final token = await TokenStorage.getAccessToken();
-        if (token != null) {
-          options.headers['Authorization'] = 'Bearer $token';
-        }
-        return handler.next(options);
-      },
+  );
+
+  // A separate client without auth-refresh interception to avoid recursion.
+  static final Dio _authDio = Dio(
+    BaseOptions(
+      baseUrl: apiBaseUrl,
+      connectTimeout: const Duration(seconds: 10),
+      sendTimeout: const Duration(seconds: 20),
+      receiveTimeout: const Duration(seconds: 20),
     ),
   );
+
+  static bool _initialized = false;
+  static Future<String?>? _refreshInFlight;
+
+  static void ensureInitialized() {
+    if (_initialized) return;
+    _initialized = true;
+
+    dio.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (options, handler) async {
+          final token = await TokenStorage.getAccessToken();
+          if (token != null && token.isNotEmpty) {
+            options.headers['Authorization'] = 'Bearer $token';
+          }
+          return handler.next(options);
+        },
+        onError: (err, handler) async {
+          final status = err.response?.statusCode;
+          final requestOptions = err.requestOptions;
+
+          // Only attempt a refresh on 401 and only once per request.
+          final alreadyRetried = requestOptions.extra['__retried'] == true;
+          if (status != 401 || alreadyRetried) {
+            return handler.next(err);
+          }
+
+          _refreshInFlight ??= AuthRefreshService(_authDio).refresh();
+          final newAccessToken = await _refreshInFlight;
+          _refreshInFlight = null;
+
+          if (newAccessToken == null || newAccessToken.isEmpty) {
+            return handler.next(err);
+          }
+
+          // Retry original request with new token.
+          requestOptions.extra['__retried'] = true;
+          requestOptions.headers['Authorization'] = 'Bearer $newAccessToken';
+
+          try {
+            final response = await dio.fetch(requestOptions);
+            return handler.resolve(response);
+          } on DioException catch (e) {
+            return handler.next(e);
+          }
+        },
+      ),
+    );
+  }
 
   /// Converts an API base url like `http://host:5149/api` to server url `http://host:5149`.
   static String get serverBaseUrl {

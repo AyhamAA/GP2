@@ -2,6 +2,7 @@
 using Application.DTOs.Auth.Password;
 using Application.DTOs.Auth.Profile;
 using Application.DTOs.Auth.Register;
+using Application.DTOs.Auth.Token;
 using Application.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -35,6 +36,13 @@ public class AuthController : ControllerBase
         if (response == null)
             return BadRequest("Cannot Register.");
 
+        return Ok(response);
+    }
+
+    [HttpPost("RefreshToken")]
+    public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequestDto input)
+    {
+        var response = await _authService.RefreshTokenAsync(input);
         return Ok(response);
     }
 

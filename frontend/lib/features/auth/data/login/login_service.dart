@@ -26,6 +26,7 @@ class LoginService {
       final loginResponse = LoginResponse.fromJson(response.data);
 
       await UserStorage.saveUser(
+        userId: loginResponse.userId,
         fullName: loginResponse.fullName,
         email: loginResponse.email,
         role: loginResponse.role,

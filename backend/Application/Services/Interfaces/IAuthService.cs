@@ -3,6 +3,7 @@ using Application.DTOs.Auth.Login;
 using Application.DTOs.Auth.Password;
 using Application.DTOs.Auth.Profile;
 using Application.DTOs.Auth.Register;
+using Application.DTOs.Auth.Token;
 using Domain.Entities;
 
 namespace Application.Services.Interfaces
@@ -18,7 +19,7 @@ namespace Application.Services.Interfaces
         string GenerateAccessToken(User user);
         string GenerateRefreshToken();
         Task ResetPassword(ResetPasswordDto input);
-        Task<string> RefreshToken(string refreshToken);
+        Task<RefreshTokenResponseDto> RefreshTokenAsync(RefreshTokenRequestDto input);
         Task<int> GetAllUsers();
     }
 }
